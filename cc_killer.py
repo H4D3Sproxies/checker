@@ -235,6 +235,8 @@ class CC_killer():
         try:
             card_num, month, year, cvv = msg.split('|')
             
+            print(msg)
+            
             for fake_cvv in cvv_list:
                 if str(cvv) == str(fake_cvv):
                     continue

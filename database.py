@@ -40,7 +40,6 @@ CREATE TABLE IF NOT EXISTS users(
 
 select_proxies = """
     SELECT * FROM proxies
-    WHERE user_id = ?;
 """
 
 select_last_command = """
@@ -77,6 +76,7 @@ def add_proxy(user_id, ip, port, proxy_type):
     try:        
         cur.execute(insert_proxy, (user_id, ip, port, proxy_type, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         conn.commit()
+        
     except:
         pass
 
@@ -84,20 +84,24 @@ def add_update_action(user_id, action):
     try:        
         cur.execute(upsert_user_action, (user_id, action))
         conn.commit()
+        
     except:
         pass
     
 def get_user_action(user_id):
     try:        
-        cur.execute(select_last_command, (user_id,))
-        conn.commit()
+        result = cur.execute(select_last_command, (user_id,))
+        
+        return result.fetchone()['last_command']
+    
     except:
         pass
     
-def get_proxies(user_id):
+def get_proxies():
     try:        
-        result = cur.execute(select_proxies, (user_id, ))
+        result = cur.execute(select_proxies)
         
         return result.fetchall()
+    
     except:
         pass

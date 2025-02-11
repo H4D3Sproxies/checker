@@ -21,57 +21,71 @@ class Proxy():
         self.bad_results = []
         self.used_proxies = []
         self.proxies = []
-        self.host_ip = ""
         
         self.folder = 'proxies'
         self.max_threads = 40
         
-        self.refresh_host_ip()
         self.fetch_proxies()
 
     def insert_proxy(self, user_id, ip, port):
-        add_proxy(user_id, ip, port, 'http')
+        if self.proxy_api_check(user_id, ip, port):
+            add_proxy(user_id, ip, port, 'http')
+            return True
+            
+        else:
+            return False
         
-    def fetch_proxies(self, user_id):
-        self.proxies = get_proxies(user_id)
+    def fetch_proxies(self):
+        self.proxies = get_proxies()
     
-    def refresh_host_ip(self):
-        test_url = 'https://httpbin.org/ip'
+    def ip_test(self, ip, port):
+        ip_test_url = 'https://httpbin.org/ip'
         
-        response = requests.get(test_url, timeout=10)
-        self.host_ip = re.findall(r'\d+\.\d+\.\d+\.\d+', response.text)[0]
+        proxy = {
+                'http': f"http://{ip}:{port}",
+                'https': f"http://{ip}:{port}"
+            }
+        
+        print(proxy)
+        
+        response = requests.get(ip_test_url, proxies=proxy, timeout=30)
+        
+        print(response.text)
+        
+        if 'origin' in response.text:
+            if ip == re.findall(r'\d+\.\d+\.\d+\.\d+', response.text)[0]:
+                return True
+        
+        return False
     
-    def proxy_api_check(self):        
-        count = 1
-        print(len(self.requests))
-        for proxy in self.requests:
-            ip, port = proxy[0].split(':')
+    def proxy_api_check(self, user_id, ip, port):
             # url = f"http://proxycheck.io/v2/{ip}"
             
             try:
-                # url = f'http://ip-api.com/json/{ip}?fields=25882623'
-                url = f'http://check.getipintel.net/check.php?ip={ip}'
-                response = requests.get(url).json()
-                
-                print(response)
-                
-                if count % 50 == 0:
-                    print(count)
-                
-                if response['status'] == 'success':
-                    if response['proxy'] == 'False':
-                        add_proxy(ip, port, proxy[1])
-                        print(response)
-                        
-                else:
-                    print('*******************************************')
+                url = f'http://ip-api.com/json/{ip}?fields=25882623'
+                   
+                if self.ip_test(ip, port):
+                    return True
+                    response = requests.get(url).json()
+                    
                     print(response)
-                    print('*******************************************')
-                count += 1
+                    
+                    if response['status'] == 'success':
+                        if response['proxy'] == 'False':
+                            self.insert(user_id, ip, port)
+                            return True
+                            
+                    else:
+                        return False
+                    count += 1
+                    
+                else:
+                    
+                    return False
                 
             except Exception as err:
-                print(ip)
-                print(response)
+                print(err)
+                print(f'something is wrong with ip: {ip}')
 
     def load_proxies(self):
         file_names = ['http', 'socks4', 'socks5']
@@ -83,15 +97,12 @@ class Proxy():
                     print(f'starting to test {file_name}')
                     for line in file:
                         if '@' not in line and ':' in line and '.' in line:
-                            self.requests.append([line, file_name])
+                            self.proxy_api_check()
         print('done, saving successfull proxies')
-        self.proxy_api_check()
     
-    def get_random_proxy(self, proxy_list):
+    def get_random_proxy(self):
         try:
-            proxy = random.choice(proxy_list)
-            
-            proxy_list.remove(proxy)
+            proxy = random.choice(self.proxies)
             
             return proxy['ip'], proxy['port']
         except:
@@ -105,9 +116,3 @@ class Proxy():
                 proxy = self.get_random_proxy(filtered_proxies)
                 
                 file.write(f'({proxy_type}){proxy}\n')
-
-
-    def fetch_proxies(self):
-        self.proxies = get_proxies()
-        
-    

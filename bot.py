@@ -1,12 +1,13 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
+import traceback
 
 from database import get_user_action, add_update_action
 from cc_killer import CC_killer
 from proxy import Proxy
 from database import initialize_tables
 
-TOKEN = '8053702073:AAEjF9xD_GoycTy3FOpwCsuhJg0xYUmgFGE'
+TOKEN = '7553835081:AAEm5w5DE--GA2lBDyNz1YETTb9wsM5ISRM' #'8053702073:AAEjF9xD_GoycTy3FOpwCsuhJg0xYUmgFGE'
 
 class Bot():
     _instance = None
@@ -39,35 +40,40 @@ class Bot():
 
     ################ Methods
     
-    async def upload_proxies(self, msg):
+    async def upload_proxies(self, update, user_id, msg):
         proxies = msg.split('\n')
         
         for proxy in proxies:
-            ip, port = proxy.split(':')
-            
-            self.proxy.insert_proxy(ip, port)
-            
+                ip, port = proxy.split(':')
+                
+                if not self.proxy.insert_proxy(user_id, ip, port):
+                    
+                    await update.message.reply_text(f'proxy with ip: {ip}, is a bad proxy -- not saved')
     
     ################ Handlers
     
     async def handle_message(self, update: Update, context):
-        user = update.message.from_user
+        user_id = update.message.from_user.id
         msg = update.message.text
+        user_action = get_user_action(user_id)
         
-        if get_user_action(user.id) == 'start':
+        print(user_action)
+        
+        if user_action == 'start':
             try:                
                 self.cc_killer.cc_kill(msg)
             
             except:
                 await update.message.reply_text('Something went wrong when cc killing please contact admin')
                 
-        elif get_user_action(user.id) == 'proxies':
+        elif user_action == 'proxies':
             try:
-                self.upload_proxies(msg)
+                await self.upload_proxies(update, user_id, msg)
             
-                await update.message.reply_text('proxies uploaded successfully')
+                await update.message.reply_text('proxies uploading proccess finished successfully')
                 
-            except:
+            except Exception as err:
+                traceback.print_exc()
                 await update.message.reply_text('Something went wrong when uploading proxies please contact admin')
             
     def main(self):
