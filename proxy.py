@@ -24,8 +24,6 @@ class Proxy():
         
         self.folder = 'proxies'
         self.max_threads = 40
-        
-        self.fetch_proxies()
 
     def insert_proxy(self, user_id, ip, port):
         if self.proxy_api_check(user_id, ip, port):
@@ -36,7 +34,7 @@ class Proxy():
             return False
         
     def fetch_proxies(self):
-        self.proxies = get_proxies()
+        return get_proxies()
     
     def ip_test(self, ip, port):
         ip_test_url = 'https://httpbin.org/ip'

